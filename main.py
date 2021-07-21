@@ -5,7 +5,9 @@
 import bs4
 import requests
 from bs4 import BeautifulSoup as soup
-from web3 import Web3, HTTPProvider
+import redis
+import asyncio
+import re
 
 TXHASH = "txhash"
 NOUCE = "nouce"
@@ -26,13 +28,12 @@ COLUMNS = {
 NETWORK = "mainnet"
 PROJECT_ID = '75ab6c9da83d44979791ac90964c144c'
 HTTP_PROVIDER_LINK = f'https://{NETWORK}.infura.io/v3/{PROJECT_ID}'
+publisher = redis.Redis(host='localhost', port=6379)
+REDIS_CHANNEL = 'test'
 
-w3 = Web3(Web3.HTTPProvider(HTTP_PROVIDER_LINK))
 
-def fetch_transaction(txhash):
-    transaction = w3.eth.getTransaction(txhash)
-    w3.toAscii(transaction.input)
-    return transaction
+def publish_address(message):
+    publisher.publish(REDIS_CHANNEL, message)
 
 
 def execute(name):
@@ -62,10 +63,13 @@ def execute(name):
         gas_limit = items[COLUMNS[GAS_LIMIT]].getText()
         gas_price = items[COLUMNS[GAS_PRICE]].getText()
 
+        number = re.findall(r'\d+', last_seen)
+        if len(number) > 0 and number[0] < 30 and 'sec' in last_seen:
+            message = {'tx_hash': tx_hash}
+            publish_address(message)
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    trans = fetch_transaction('0xad7eb45137dc67a851f061c24d13e385d872ae62d0debb28286d203b6b97141c')
-    print(trans)
+    execute('hello world')
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
