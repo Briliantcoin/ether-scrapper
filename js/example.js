@@ -1,3 +1,5 @@
+//https://github.com/jonasbostoen/eth-transaction-checker
+
 const NETWORK = "mainnet";
 const PROJECT_ID = '299bf20331c949699954e339bf66d086';//"833633b85ef64effa9d0e47fb2857b32"; //"8b4dac9803324fbbb31ce9c58b972810";//75ab6c9da83d44979791ac90964c144c";//
 const {UNISWAP_ROUTER_ABI, UNISWAP_POOL_ABI, UNISWAP_ROUTER_ADDRESS, UNISWAP_FACTORY_ABI, UNISWAP_FACTORY_ADDRESS} = require('./constants.js');
@@ -138,35 +140,48 @@ async function getTokenData(tokenAddress){
     var symbol =  await token_contract.methods.symbol().call();
     return {'address': tokenAddress, 'decimals': decimals, 'symbol': symbol, 'token_constract': token_contract}
 }
-//decode_transaction("0xb7be11fc9ad794097ad2d4a4eec24b17f7c89742c0d48ca28bcba50ab7d0bca3")
+
 //sampleConverter()
 
-async function convertAmount(inputAmount, inputTokenInfo, outputTokenInfo){
-    var poolPair = await uniswapFactory.methods.getPair(inputTokenInfo.address, outputTokenInfo.address).call();
-    var poolContract = new web3.eth.Contract(UNISWAP_POOL_ABI, poolPair);
+async function convertAmount(inputAmount, inputTokenInfo, outputTokenInfo, poolContract){
     var reserves = await poolContract.methods.getReserves().call();
     var pool_info = {
         'contract': poolContract,
         'input_volumn': reserves[0], 
         'output_volumn': reserves[1]
     }
-
-    console.log('input reserve amount: ',pool_info.input_volumn.toString());
-    console.log('output reserve amount: ',pool_info.output_volumn.toString());
+    var token0_address = await poolContract.methods.token0().call();
+    if (token0_address != inputTokenInfo.address){
+        pool_info.input_volumn = reserves[1];
+        pool_info.output_volumn = reserves[0];
+    }
     var out_amount_token = await uniswapRouter.methods.getAmountOut((inputAmount * (10 ** inputTokenInfo.decimals)).toString(), 
                                         pool_info.input_volumn.toString(), pool_info.output_volumn.toString()).call();
     console.log('In Amount ', inputAmount + ' ' + inputTokenInfo.symbol);
-    console.log('Out Amount ', (out_amount_token/(10 ** outputTokenInfo.decimals)).toFixed(3) + ' ' + outputTokenInfo.symbol);
+    console.log('Out Amount ', (out_amount_token/(10 ** outputTokenInfo.decimals)).toFixed(5) + ' ' + outputTokenInfo.symbol);
     return out_amount_token;
 }
 
-var buy_amount = 0.5;
+var buy_amount = 2700;
 var inputTokenInfo;
 var outputTokenInfo; 
 
 async function main() {
-    inputTokenInfo = await getTokenData(ETH_TOKEN_ADDRESS);
-    outputTokenInfo = await getTokenData(USDT_TOKEN_ADDRESS);
-    convertAmount(buy_amount, inputTokenInfo, outputTokenInfo);
+    inputTokenInfo = await getTokenData(USDT_TOKEN_ADDRESS);
+    outputTokenInfo = await getTokenData(ETH_TOKEN_ADDRESS);
+    var poolPair = await uniswapFactory.methods.getPair(inputTokenInfo.address, outputTokenInfo.address).call();
+    var poolContract = new web3.eth.Contract(UNISWAP_POOL_ABI, poolPair);
+    convertAmount(buy_amount, inputTokenInfo, outputTokenInfo, poolContract);
 }
-main();
+//main();
+
+//swap token for eth 
+trasaction_id_1 = "0xb7be11fc9ad794097ad2d4a4eec24b17f7c89742c0d48ca28bcba50ab7d0bca3"; 
+//swap eth for token
+transaction_id_2 = "0x5402fa7f4d42f67f057fbd0b1db3f9f517f9980c0b05bff74e46ca719e0b0c4f"; 
+// swap token for toekn 
+transaction_id_3 = "0xf8e1d7e9a4a108bbe084d5e6cfb8508325a740051eb21ecaa919afb97cd33334"; 
+// swap invalid 
+transaction_id_4 = "0x331db565c5de8c9b4a7aed12fd73c35ab3e3df6f231e7dbd4c5bf67f8a79de9a"; 
+
+decode_transaction(transaction_id_2);
