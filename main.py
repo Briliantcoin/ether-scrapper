@@ -31,6 +31,8 @@ HTTP_PROVIDER_LINK = f'https://{NETWORK}.infura.io/v3/{PROJECT_ID}'
 publisher = redis.Redis(host='localhost', port=6379)
 REDIS_CHANNEL = 'test'
 
+OLD_TRAS_ID = {}
+
 
 def publish_address(message):
     publisher.publish(REDIS_CHANNEL, message)
@@ -57,6 +59,9 @@ def execute(name):
     for row in transaction_holders:
         items = row.findAll('td')
         tx_hash = items[COLUMNS[TXHASH]].getText()
+        if tx_hash in OLD_TRAS_ID:
+            break
+
         nouce = items[COLUMNS[NOUCE]].getText()
         method = items[COLUMNS[METHOD]].getText()
         last_seen = items[COLUMNS[LAST_SEEN]].getText()
@@ -64,12 +69,24 @@ def execute(name):
         gas_price = items[COLUMNS[GAS_PRICE]].getText()
 
         number = re.findall(r'\d+', last_seen)
-        if len(number) > 0 and number[0] < 30 and 'sec' in last_seen:
-            message = {'tx_hash': tx_hash}
-            publish_address(message)
+        if len(number) > 0 and int(number[0]) < 50 and 'sec' in last_seen:
+            publish_address(tx_hash)
+            OLD_TRAS_ID[tx_hash] = int(number[0])
+
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    execute('hello world')
+    import time
+
+    while True:
+        try:
+            start_time = time.time()
+            execute('hello world')
+            print("time took: ", time.time() - start_time)
+            print("transaction received:", len(OLD_TRAS_ID))
+            time.sleep(7)
+        except:
+            print("error sleep for 10s")
+            time.sleep(10)
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
