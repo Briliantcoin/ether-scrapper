@@ -30,6 +30,7 @@ function parseTx(input) {
     if (input == '0x')
         return ['0x', []]
     let decodedData = abiDecoder.decodeMethod(input);
+    //console.log("Decoded data: ", decodedData)
     let method = decodedData['name'];
     let params = decodedData['params'];
 
@@ -40,10 +41,8 @@ async function decode_transaction(txhash) {
     try {
         let transaction = await web3.eth.getTransaction(txhash);
         console.log(transaction)
-        data = parseTx(transaction.input)
-        console.log(data[0])
-        console.log('=====================================\n');
-        console.log(data[1])
+        dataInput = parseTx(transaction.input)
+        return [transaction, dataInput]
     } catch (error) {
 
         console.log('Unknown Handled Error');
@@ -51,35 +50,6 @@ async function decode_transaction(txhash) {
         process.exit();
     }
 }
-
-/**
- * 
-const subscription = web3.eth.subscribe('pendingTransactions', (err, res) => {
-    if (err) console.error(err);
-});
-subscription.on('data', (txHash) => {
-    setTimeout(async () => {
-        try {
-            count += 1;
-            console.log('Count: ',count);
-            console.log('Transaction Hash: ',txHash);
-            let tx = await web3.eth.getTransaction(txHash);
-            if (tx && tx.to) {// This is the point you might be looking for to filter the address
-                if (tx.to.toLowerCase() === account) {
-                    console.log('Transaction Hash: ',txHash );
-                    console.log('Transaction Confirmation Index: ',tx.transactionIndex );// 0 when transaction is pending
-                    console.log('Transaction Received from: ',tx.from );
-                    console.log('Transaction Amount(in Ether): ',web3.utils.fromWei(tx.value, 'ether'));
-                    console.log('Transaction Receiving Date/Time: ',new Date());
-                    console.log('=====================================\n');
-                }
-            }
-        } catch (err) {
-            console.error(err);
-        }
-    }, 10 * 1000); // runs every 20 seconds
-});
- */
 
 function redisSubcribe(){
     var subscriber = redis.createClient();
@@ -143,7 +113,7 @@ async function getTokenData(tokenAddress){
 
 //sampleConverter()
 
-async function convertAmount(inputAmount, inputTokenInfo, outputTokenInfo, poolContract){
+async function convertAmountOut(inputAmount, inputTokenInfo, outputTokenInfo, poolContract){
     var reserves = await poolContract.methods.getReserves().call();
     var pool_info = {
         'contract': poolContract,
@@ -162,6 +132,14 @@ async function convertAmount(inputAmount, inputTokenInfo, outputTokenInfo, poolC
     return out_amount_token;
 }
 
+
+function convertTokenAmount(amount, tokenInfo){
+    var convertAmount = amount/(10 ** tokenInfo.decimals);
+    console.log('Out Amount ', (out_amount_token/(10 ** outputTokenInfo.decimals)).toFixed(5) + ' ' + outputTokenInfo.symbol);
+    return convertAmount
+}
+
+
 var buy_amount = 2700;
 var inputTokenInfo;
 var outputTokenInfo; 
@@ -171,7 +149,7 @@ async function main() {
     outputTokenInfo = await getTokenData(ETH_TOKEN_ADDRESS);
     var poolPair = await uniswapFactory.methods.getPair(inputTokenInfo.address, outputTokenInfo.address).call();
     var poolContract = new web3.eth.Contract(UNISWAP_POOL_ABI, poolPair);
-    convertAmount(buy_amount, inputTokenInfo, outputTokenInfo, poolContract);
+    convertAmountOut(buy_amount, inputTokenInfo, outputTokenInfo, poolContract);
 }
 //main();
 
@@ -184,4 +162,35 @@ transaction_id_3 = "0xf8e1d7e9a4a108bbe084d5e6cfb8508325a740051eb21ecaa919afb97c
 // swap invalid 
 transaction_id_4 = "0x331db565c5de8c9b4a7aed12fd73c35ab3e3df6f231e7dbd4c5bf67f8a79de9a"; 
 
-decode_transaction(transaction_id_2);
+decode_transaction(trasaction_id_1);
+
+async function decode_transaction_meta(transaction, transaction_data){
+    var methodName = transaction_data[0]; 
+    var transactionInput = transaction_data[1];
+
+    var inputAddress = transactionInput[2].value[0]; 
+    var outputAddress = transactionInput[2].value[1]; 
+    var inputAmount = parseInt(transactionInput[0].value); 
+    var outputAmount = parseInt(transactionInput[1].value); 
+    var gasLimit = parseInt(transaction.gas); 
+    var gasPrice = parseInt(transaction.gasPrice);
+    return {'inputAddress': inputAddress, 'outputAddress': outputAddress, 
+            'inputAmount': inputAmount, 'outputAmount': outputAmount, 'gasLimit': gasLimit, 'gasPrice': gasPrice, 'methodName': methodName};
+}
+
+async function execute(){
+    try {
+        inputTokenInfo = await getTokenData(USDT_TOKEN_ADDRESS);
+        outputTokenInfo = await getTokenData(ETH_TOKEN_ADDRESS);
+        var poolPair = await uniswapFactory.methods.getPair(inputTokenInfo.address, outputTokenInfo.address).call();
+        var poolContract = new web3.eth.Contract(UNISWAP_POOL_ABI, poolPair);
+
+        const [transaction, dataInput] = decode_transaction(trasaction_id_1);
+        transactionMetadata = decode_transaction_meta(transaction, dataInput)
+        convertInputAmount = convertTokenAmount()
+    } catch (error) {
+
+        console.log('Unknown Handled Error');
+        console.log(error);
+        
+}
