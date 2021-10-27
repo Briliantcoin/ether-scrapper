@@ -46,7 +46,7 @@ async function triggersFrontRun(transaction, out_token_address, amount, level) {
         if(in_amount >= pool_info.attack_volumn)
         {
              console.log(log_str);
-             return false;
+             return true;
         }   
         else
         {
@@ -81,7 +81,7 @@ async function triggersFrontRun(transaction, out_token_address, amount, level) {
         if(in_max >= pool_info.attack_volumn)
         {
              console.log(log_str);
-             return false;
+             return true;
         }   
         else
         {

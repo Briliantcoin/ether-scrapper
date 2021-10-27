@@ -40,7 +40,7 @@ def publish_address(message):
 
 def execute(name):
     # Use a breakpoint in the code line below to debug your script.
-    my_url = 'https://etherscan.io/txsPending?a=0x7a250d5630b4cf539739df2c5dacb4c659f2488d&&m=hf&p=1'
+    my_url = 'https://bscscan.com/txsPending?a=0x10ed43c718714eb63d5aa57b78b54704e256024e&m=hf'
     headers = {
         'User-Agent': 'PostmanRuntime/7.26.8',
         'Host': 'etherscan.io',
@@ -84,7 +84,7 @@ if __name__ == '__main__':
             execute('hello world')
             print("time took: ", time.time() - start_time)
             print("transaction received:", len(OLD_TRAS_ID))
-            time.sleep(7)
+            time.sleep(4)
         except:
             print("error sleep for 10s")
             time.sleep(10)

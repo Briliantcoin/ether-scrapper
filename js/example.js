@@ -135,7 +135,6 @@ async function convertAmountOut(inputAmount, inputTokenInfo, outputTokenInfo, po
 
 function convertTokenAmount(amount, tokenInfo){
     var convertAmount = amount/(10 ** tokenInfo.decimals);
-    console.log('Out Amount ', (out_amount_token/(10 ** outputTokenInfo.decimals)).toFixed(5) + ' ' + outputTokenInfo.symbol);
     return convertAmount
 }
 
@@ -185,12 +184,25 @@ async function execute(){
         var poolPair = await uniswapFactory.methods.getPair(inputTokenInfo.address, outputTokenInfo.address).call();
         var poolContract = new web3.eth.Contract(UNISWAP_POOL_ABI, poolPair);
 
-        const [transaction, dataInput] = decode_transaction(trasaction_id_1);
+        var decode_data = decode_transaction(trasaction_id_1);
+        var transaction = decode_data[0];
+        var dataInput = decode_data[1];
         transactionMetadata = decode_transaction_meta(transaction, dataInput)
-        convertInputAmount = convertTokenAmount()
-    } catch (error) {
+        convertInputAmount = convertTokenAmount(transactionMetadata.inputAmount, inputTokenInfo)
+        convertOutputAmount = convertTokenAmount(transactionMetadata.outputAmount, outputTokenInfo)
 
+        console.log('In Amount ', convertInputAmount.toFixed(5) + ' ' + outputTokenInfo.symbol);
+        console.log('Out Amount ', convertOutputAmount.toFixed(5) + ' ' + outputTokenInfo.symbol)
+    } catch (error) {
         console.log('Unknown Handled Error');
         console.log(error);
-        
+    }
 }
+
+// 1. init service container 
+// 1.1 init user wallet, related uniswap router, gas station 
+// 1.2 setup token pool meta data, token pair
+// 2. listen to transaction peding 
+// 2.1 filter with specifi address, volum, gas price data 
+// 2.2 making swap transaction (get correct token info -> convert token omount -> open sign transaction)
+// 3. tracking for transaction status and error handling
